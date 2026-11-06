@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Haushaltsbuch">
+<meta name="theme-color" content="#f2f3f5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<title>Haushaltsbuch</title>
+<style>
+:root{
+  --bg:#f2f3f5;--bgT:rgba(242,243,245,.86);--card:#fff;--text:#1c1f24;--muted:#6b7280;--line:#e6e8eb;--chip:#eceef2;
+  --accent:#1F4E79;--konto:#1F4E79;--bar:#2E7D5B;--pos:#1e7b3a;--neg:#c0392b;--warnbg:#fff4d6;--warn:#6b4e00;
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#000;--bgT:rgba(0,0,0,.82);--card:#1c1c1e;--text:#f2f2f7;--muted:#8e8e93;--line:#2c2c2e;--chip:#2c2c2e;
+    --accent:#4f93d6;--konto:#4f93d6;--bar:#43b07f;--pos:#4cd47a;--neg:#ff6b5b;--warnbg:#3a3015;--warn:#ffd77a;}
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Arial,sans-serif;-webkit-text-size-adjust:100%}
+body{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+button{font-family:inherit;cursor:pointer}
+header{position:sticky;top:0;z-index:5;background:var(--bgT);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  padding:calc(env(safe-area-inset-top) + 12px) 18px 8px}
+header .in{max-width:760px;margin:0 auto;display:flex;align-items:flex-end;justify-content:space-between}
+header h1{margin:0;font-size:31px;font-weight:800;letter-spacing:-.6px}
+main{padding:2px 14px 24px;max-width:760px;margin:0 auto}
+.card{background:var(--card);border-radius:16px;padding:14px;margin:10px 0}
+.seg{display:grid;grid-template-columns:repeat(var(--n),1fr);background:var(--chip);border-radius:11px;padding:3px;gap:3px;margin-bottom:10px}
+.seg button{border:0;background:transparent;color:var(--text);font-weight:600;font-size:15px;line-height:1.15;padding:9px 4px;border-radius:9px}
+.seg button small{display:block;font-weight:500;font-size:11px;color:var(--muted);margin-top:1px}
+.seg button.on{background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+.lbl{display:block;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin:12px 2px 5px}
+select,input{width:100%;font:inherit;font-size:17px;color:var(--text);background:var(--chip);border:0;border-radius:11px;padding:12px;-webkit-appearance:none;appearance:none;outline:none;min-height:46px}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%238e8e93' stroke-width='2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:34px}
+input:focus,select:focus{box-shadow:0 0 0 2px var(--accent) inset}
+.amt{display:flex;align-items:center;background:var(--chip);border-radius:11px;padding:0 14px}
+.amt input{background:transparent;font-size:34px;font-weight:700;text-align:right;padding:8px 6px;box-shadow:none!important;font-variant-numeric:tabular-nums}
+.amt span{font-size:26px;font-weight:600;color:var(--muted)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{display:block;width:100%;border:0;border-radius:12px;padding:14px;font-weight:700;font-size:17px;margin-top:14px;background:var(--chip);color:var(--text)}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.green{background:var(--bar);color:#fff}
+.btn.danger{color:var(--neg)}
+.btn.small{display:inline-block;width:auto;padding:9px 14px;font-size:15px;margin:0}
+.btns{display:flex;gap:10px}.btns .btn{flex:1}
+.list{padding:0;overflow:hidden}
+.row{display:flex;align-items:center;gap:11px;width:100%;border:0;background:none;color:inherit;font:inherit;text-align:left;padding:11px 14px;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row:active{background:var(--chip)}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;background:var(--muted)}
+.dot.konto{background:var(--konto)}.dot.bar{background:var(--bar)}
+.r-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.r-title{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r-sub{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r-amt{font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;text-align:right}
+.r-amt small{display:block;font-size:12px;font-weight:500;color:var(--muted)}
+.pos{color:var(--pos)}.neg{color:var(--neg)}.muted{color:var(--muted)}
+.badge{font-size:10px;font-weight:700;text-transform:uppercase;background:var(--chip);color:var(--muted);border-radius:5px;padding:1px 5px;margin-left:6px;vertical-align:2px}
+.sec{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin:22px 6px 6px;display:flex;justify-content:space-between;align-items:center}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.kpi{background:var(--card);border-radius:16px;padding:12px 14px}
+.kpi .k{font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.kpi .v{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px;letter-spacing:-.3px}
+.ch{font-size:17px;font-weight:800;margin:0 0 8px;display:flex;justify-content:space-between;align-items:baseline}
+.ch span:last-child{font-variant-numeric:tabular-nums}
+.grp{margin:8px 0 12px}
+.grp-h{display:flex;justify-content:space-between;align-items:center;font-weight:700;padding:6px 0;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.ln{display:flex;justify-content:space-between;gap:10px;padding:6px 0 6px 10px;font-size:15px;font-variant-numeric:tabular-nums}
+.ln.empty{color:var(--muted)}
+.ln.ind{padding-left:10px}
+.ln b{font-weight:800}
+.tag{font-size:11px;font-weight:700;border-radius:5px;padding:2px 6px;color:#fff;background:var(--konto);margin-right:4px;vertical-align:1px}
+.tag.bar{background:var(--bar)}.tag.tr{background:var(--muted)}
+.total{display:flex;justify-content:space-between;font-weight:800;padding:10px 0 2px;border-top:2px solid var(--text);margin-top:4px;font-variant-numeric:tabular-nums}
+.bars .b{margin:9px 0}
+.bars .bt{display:flex;justify-content:space-between;gap:10px;font-size:14px;font-variant-numeric:tabular-nums}
+.bars .track{height:8px;border-radius:4px;background:var(--chip);margin-top:4px;overflow:hidden}
+.bars .fill{height:100%;background:var(--accent);border-radius:4px}
+.nav{display:flex;align-items:center;justify-content:space-between;margin:6px 0 4px}
+.nav button{border:0;background:var(--card);width:42px;height:42px;border-radius:50%;font-size:22px;color:var(--accent);font-weight:700}
+.nav .lab{font-weight:800;font-size:19px}
+.tbl{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -14px;padding:0 14px}
+table{border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums;width:100%}
+th,td{padding:8px 9px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--card);z-index:1}
+th{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase}
+tr.sum td{font-weight:800;border-top:2px solid var(--text);border-bottom:0}
+tr.click td:first-child{color:var(--accent);font-weight:700}
+#sheet{position:fixed;inset:0;z-index:20;display:none}
+#sheet.open{display:block}
+.sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.38)}
+.sheet-panel{position:absolute;left:0;right:0;bottom:0;max-height:94vh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg);border-radius:18px 18px 0 0;padding:14px 16px calc(22px + env(safe-area-inset-bottom));max-width:760px;margin:0 auto;animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(50px);opacity:.4}}
+.sheet-head{display:flex;justify-content:space-between;align-items:center;margin:2px 0 10px}
+.sheet-head h2{margin:0;font-size:21px}
+.x{border:0;background:var(--chip);border-radius:50%;width:32px;height:32px;font-size:17px;color:var(--muted);flex:none}
+#toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(16px);background:rgba(28,28,30,.94);color:#fff;padding:11px 16px;border-radius:12px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:40;max-width:90vw;text-align:center;font-size:15px}
+#toast.show{opacity:1;transform:translateX(-50%)}
+.banner{display:flex;gap:10px;align-items:center;justify-content:space-between;background:var(--warnbg);color:var(--warn);border-radius:12px;padding:10px 12px;font-size:14px;margin:8px 0}
+.banner button{border:0;background:rgba(0,0,0,.08);color:inherit;font-weight:700;border-radius:8px;padding:7px 10px;white-space:nowrap}
+.hint{font-size:13px;color:var(--muted);margin:6px 4px}
+.info{font-size:13px;color:var(--muted);background:var(--chip);border-radius:10px;padding:9px 11px;margin:10px 0}
+.empty-state{text-align:center;color:var(--muted);padding:22px 10px;font-size:15px}
+.hist{font-size:14px}
+.catrow{display:flex;align-items:center;gap:8px;padding:9px 2px;border-bottom:1px solid var(--line)}
+.catrow:last-child{border-bottom:0}
+.catrow span{flex:1}
+.catrow button{border:0;background:var(--chip);color:var(--muted);border-radius:8px;padding:6px 10px;font-size:13px;font-weight:600}
+.addrow{display:flex;gap:8px;margin-top:10px}.addrow button{flex:none}
+details summary{list-style:none;cursor:pointer}
+details summary::-webkit-details-marker{display:none}
+details summary .chev{transition:.2s;display:inline-block;color:var(--muted)}
+details[open] summary .chev{transform:rotate(90deg)}
+.chart svg{width:100%;height:auto;display:block}
+.legend{display:flex;gap:14px;font-size:13px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.check{font-size:13px;font-weight:700;margin-top:8px}
+#tabs{position:fixed;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(4,1fr);background:var(--bgT);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:10}
+#tabs[hidden]{display:none}
+#tabs button{border:0;background:none;color:var(--muted);font-weight:600;font-size:10.5px;padding:7px 0 5px;display:flex;flex-direction:column;align-items:center;gap:2px}
+#tabs svg{width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+#tabs button.on{color:var(--accent)}
+@media (min-width:700px){.kpis{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<header><div class="in"><h1 id="title">Haushaltsbuch</h1><div id="hright"></div></div></header>
+<main id="view"></main>
+<nav id="tabs" hidden>
+  <button data-tab="eingabe"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Eingabe</button>
+  <button data-tab="fix"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg>Fixposten</button>
+  <button data-tab="analyse"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Analyse</button>
+  <button data-tab="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Einstellungen</button>
+</nav>
+<div id="sheet"></div>
+<div id="toast"></div>
+<input type="file" id="filein" accept=".json,application/json" hidden>
+
+<script>
+'use strict';
+/* =========================================================
+   Haushaltsbuch – Web-App
+   Logik identisch zur Excel-Vorlage:
+   Konto-Ende  = Anfang + Einnahmen Konto − Ausgaben Konto − Bargeldauszahlungen + Bareinzahlungen
+   Bar-Ende    = Anfang + Einnahmen Bar − Ausgaben Bar + Bargeldauszahlungen − Bareinzahlungen
+   Ergebnis    = (Einnahmen Bar + Konto) − (Ausgaben Bar + Konto); Umbuchungen sind ergebnisneutral
+   Fixposten → "fix" bzw. "planbar"; manuelle Buchungen → "variabel" bzw. "außerplanmäßig"
+   Beträge werden intern in Cent gespeichert.
+   ========================================================= */
+const APP_VERSION = '1.0';
+const KEY = 'haushaltsbuch.v1';
+const MONTHS = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const MSHORT = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+const INTERVALS = {
+  w1:{label:'Wöchentlich',days:7,pm:52/12}, w2:{label:'Alle 2 Wochen',days:14,pm:26/12},
+  m1:{label:'Monatlich',months:1,pm:1}, m2:{label:'Alle 2 Monate',months:2,pm:1/2},
+  m3:{label:'Vierteljährlich',months:3,pm:1/3}, m6:{label:'Halbjährlich',months:6,pm:1/6},
+  y1:{label:'Jährlich',months:12,pm:1/12}
+};
+const DEFAULT_CATS = {
+  ausgabe:['Lebensmittel / Einkäufe','Drogerie / Hygiene','Essen gehen / Imbiss','Kleidung / Schuhe','Tanken / Mobilität',
+    'Freizeit / Hobby','Gesundheit / Apotheke','Haushalt / Einrichtung','Geschenke','Urlaub / Reisen','Online-Shopping',
+    'Bildung / Bücher','Miete','Nebenkosten','Strom','Internet / Telefon','Handyvertrag','Versicherungen',
+    'Kfz-Versicherung / -Steuer','Rundfunkbeitrag','Streaming / Abos','Fitnessstudio / Verein','Kredit / Ratenzahlung','Sonstiges'],
+  einnahme:['Gehalt','Nebenjob','Weihnachtsgeld','Urlaubsgeld','Steuererstattung','Rückerstattung','Verkauf','Geschenk','Zinsen','Sonstiges']
+};
+
+/* ---------- Hilfsfunktionen ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2,'0');
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+function todayISO(){ const d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function pISO(s){ const [y,m,d]=s.split('-').map(Number); return {y,m,d}; }
+const iso = (y,m,d) => y+'-'+pad(m)+'-'+pad(d);
+const dim = (y,m) => new Date(Date.UTC(y,m,0)).getUTCDate();
+function addDays(s,n){ const {y,m,d}=pISO(s); const t=new Date(Date.UTC(y,m-1,d+n)); return iso(t.getUTCFullYear(),t.getUTCMonth()+1,t.getUTCDate()); }
+function addMonths(s,n){ const {y,m,d}=pISO(s); const tot=(m-1)+n; const ny=y+Math.floor(tot/12); const nm=((tot%12)+12)%12+1; return iso(ny,nm,Math.min(d,dim(ny,nm))); }
+const ymOf = s => s.slice(0,7);
+const ymAdd = (ym,n) => addMonths(ym+'-01',n).slice(0,7);
+function fmtDate(s){ if(!s) return ''; const {y,m,d}=pISO(s); return pad(d)+'.'+pad(m)+'.'+y; }
+function ymLabel(ym){ return MONTHS[+ym.slice(5)-1]+' '+ym.slice(0,4); }
+const NF = new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'});
+const eur = c => NF.format((c||0)/100);
+const pct = (a,b) => b ? (a/b*100).toLocaleString('de-DE',{maximumFractionDigits:1})+' %' : '–';
+function parseAmt(str){
+  if(str===null||str===undefined) return NaN;
+  let s=String(str).trim().replace(/[\s€]/g,'');
+  if(!s) return NaN;
+  if(s.includes(',')) s=s.replace(/\./g,'').replace(',','.');
+  else if(/^\d{1,3}(\.\d{3})+$/.test(s)) s=s.replace(/\./g,'');
+  const v=Number(s); return isFinite(v) ? Math.round(v*100) : NaN;
+}
+const amtStr = c => (c/100).toFixed(2).replace('.',',');
+const sumObj = o => Object.values(o).reduce((a,b)=>a+b,0);
+
+/* ---------- Speicher ---------- */
+function fresh(){
+  const t=todayISO();
+  return {v:1, setup:false,
+    settings:{start:ymOf(t)+'-01', kontoStart:0, barStart:0, lastBackup:null},
+    cats:JSON.parse(JSON.stringify(DEFAULT_CATS)), tx:[], rec:[]};
+}
+function normalize(j){
+  const f=fresh();
+  j.settings=Object.assign(f.settings,j.settings||{});
+  j.cats=j.cats&&j.cats.ausgabe&&j.cats.einnahme ? j.cats : f.cats;
+  j.tx=Array.isArray(j.tx)?j.tx:[]; j.rec=Array.isArray(j.rec)?j.rec:[];
+  j.rec.forEach(r=>{ r.skip=r.skip||[]; r.versions=(r.versions||[]).sort((a,b)=>a.from<b.from?-1:1); });
+  return j;
+}
+function load(){ try{ const j=JSON.parse(localStorage.getItem(KEY)); if(j&&j.v===1) return normalize(j); }catch(e){} return fresh(); }
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){ alert('Speichern fehlgeschlagen: '+e.message); } }
+let S = load();
+
+/* ---------- Wiederkehrende Posten ---------- */
+function nthDate(r,n){ const iv=INTERVALS[r.interval]; return iv.days ? addDays(r.start,iv.days*n) : addMonths(r.start,iv.months*n); }
+function occurrences(r,from,to){
+  const out=[];
+  for(let n=0;n<10000;n++){ const d=nthDate(r,n); if(d>to) break; if(r.end&&d>r.end) break; if(d>=from) out.push(d); }
+  return out;
+}
+function nextDue(r,after){
+  for(let n=0;n<10000;n++){ const d=nthDate(r,n); if(r.end&&d>r.end) return null; if(d>=after && !r.skip.includes(d)) return d; }
+  return null;
+}
+function amountAt(r,d){ let a=r.versions[0].amount; for(const v of r.versions){ if(v.from<=d) a=v.amount; } return a; }
+function recActive(r){ return !r.end || r.end>=todayISO(); }
+function runRecurring(){
+  if(!S.setup) return 0;
+  const t=todayISO(); let n=0;
+  const have=new Set(S.tx.filter(x=>x.recId).map(x=>x.recId+'|'+x.due));
+  for(const r of S.rec){
+    const from = r.start>S.settings.start ? r.start : S.settings.start;
+    for(const d of occurrences(r,from,t)){
+      const k=r.id+'|'+d;
+      if(have.has(k) || r.skip.includes(d)) continue;
+      S.tx.push({id:uid(),date:d,due:d,kind:r.kind,acct:r.acct,cat:r.cat,amount:amountAt(r,d),note:r.name||'',recId:r.id,fixed:true});
+      have.add(k); n++;
+    }
+  }
+  if(n) save();
+  return n;
+}
+function expectedRest(ym){ // noch ausstehende Fixposten im laufenden Monat
+  const t=todayISO(); if(ym!==ymOf(t)) return [];
+  const from=addDays(t,1), to=ym+'-'+pad(dim(+ym.slice(0,4),+ym.slice(5)));
+  const out=[];
+  for(const r of S.rec){
+    for(const d of occurrences(r, from>r.start?from:r.start, to)){
+      if(r.skip.includes(d)) continue;
+      out.push({date:d,kind:r.kind,acct:r.acct,cat:r.cat,name:r.name,amount:amountAt(r,d)});
+    }
+  }
+  return out.sort((a,b)=>a.date<b.date?-1:1);
+}
+
+/* ---------- Auswertung (gleiche Logik wie Excel) ---------- */
+function monthData(ym){
+  const g={inKPlan:{},inKExtra:{},inBar:{},outKFix:{},outKVar:{},outBar:{},aus:0,ein:0,list:[],aus_l:[],ein_l:[]};
+  const add=(o,k,v)=>{o[k]=(o[k]||0)+v;};
+  for(const x of S.tx){
+    if(x.date.slice(0,7)!==ym || x.date<S.settings.start) continue;
+    g.list.push(x);
+    if(x.kind==='einnahme'){ if(x.acct==='bar') add(g.inBar,x.cat,x.amount); else add(x.fixed?g.inKPlan:g.inKExtra,x.cat,x.amount); }
+    else if(x.kind==='ausgabe'){ if(x.acct==='bar') add(g.outBar,x.cat,x.amount); else add(x.fixed?g.outKFix:g.outKVar,x.cat,x.amount); }
+    else if(x.kind==='auszahlung'){ g.aus+=x.amount; g.aus_l.push(x); }
+    else if(x.kind==='einzahlung'){ g.ein+=x.amount; g.ein_l.push(x); }
+  }
+  g.inK=sumObj(g.inKPlan)+sumObj(g.inKExtra); g.inB=sumObj(g.inBar);
+  g.outK=sumObj(g.outKFix)+sumObj(g.outKVar); g.outB=sumObj(g.outBar);
+  g.inc=g.inK+g.inB; g.exp=g.outK+g.outB; g.res=g.inc-g.exp;
+  g.byCat={}; for(const o of [g.outKFix,g.outKVar,g.outBar]) for(const k in o) add(g.byCat,k,o[k]);
+  g.inByCat={}; for(const o of [g.inKPlan,g.inKExtra,g.inBar]) for(const k in o) add(g.inByCat,k,o[k]);
+  g.list.sort(txSort);
+  return g;
+}
+function lastYm(){ let last=ymOf(todayISO()); for(const x of S.tx){ const y=ymOf(x.date); if(y>last) last=y; } return last; }
+function balanceTable(){
+  const startYm=ymOf(S.settings.start), endYm=lastYm().slice(0,4)+'-12';
+  const out={}; let k=S.settings.kontoStart, b=S.settings.barStart, ym=startYm;
+  while(ym<=endYm){
+    const g=monthData(ym), ks=k, bs=b;
+    k = ks + g.inK - g.outK - g.aus + g.ein;
+    b = bs + g.inB - g.outB + g.aus - g.ein;
+    out[ym]={ks,ke:k,bs,be:b,g};
+    ym=ymAdd(ym,1);
+  }
+  return out;
+}
+function activeMonths(year){
+  const startYm=ymOf(S.settings.start), last=lastYm(), out=[];
+  for(let m=1;m<=12;m++){ const ym=year+'-'+pad(m); if(ym>=startYm && ym<=last) out.push(ym); }
+  return out;
+}
+function txSort(a,b){ return a.date===b.date ? (a.id<b.id?1:-1) : (a.date<b.date?1:-1); }
+
+/* ---------- UI-Zustand ---------- */
+const UI={tab:'eingabe', amode:'monat', ym:ymOf(todayISO()), year:+todayISO().slice(0,4)};
+const F={kind:'ausgabe',acct:'konto',transfer:'auszahlung',cat:'',amount:'',date:todayISO(),note:'',lastCat:{}};
+let M=null; // Zustand des offenen Formulars im Bottom-Sheet
+
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'),2200); }
+function openSheet(m){ M=m; $('#sheet').classList.add('open'); renderSheet(); }
+function renderSheet(){
+  if(!M) return;
+  $('#sheet').innerHTML=`<div class="sheet-bg" data-a="close"></div><div class="sheet-panel"><div class="sheet-head"><h2>${esc(M.title)}</h2><button class="x" data-a="close">✕</button></div>${M.render(M.s)}</div>`;
+}
+function closeSheet(){ M=null; $('#sheet').classList.remove('open'); $('#sheet').innerHTML=''; }
+
+function seg(sc,k,val,opts){
+  return `<div class="seg" data-scope="${sc}" data-k="${k}" style="--n:${opts.length}">`+
+    opts.map(([v,l])=>`<button type="button" data-v="${v}" class="${v===val?'on':''}">${l}</button>`).join('')+'</div>';
+}
+function catSelect(sc,kind,cur){
+  const cats=S.cats[kind].slice(); if(cur&&!cats.includes(cur)) cats.push(cur);
+  return `<select data-${sc}="cat">${cats.map(c=>`<option value="${esc(c)}" ${c===cur?'selected':''}>${esc(c)}</option>`).join('')}</select>`;
+}
+
+/* ---------- Buchungsformular (Eingabe + Bearbeiten) ---------- */
+function txForm(s,sc){
+  const isT=s.kind==='umbuchung';
+  let h=seg(sc,'kind',s.kind,[['ausgabe','Ausgabe'],['einnahme','Einnahme'],['umbuchung','Umbuchung']]);
+  if(isT){
+    h+=seg(sc,'transfer',s.transfer,[['auszahlung','Abheben<small>Konto → Bar</small>'],['einzahlung','Einzahlen<small>Bar → Konto</small>']]);
+  } else {
+    h+=seg(sc,'acct',s.acct,[['konto','Karte / Konto'],['bar','Bar']]);
+    if(!S.cats[s.kind].includes(s.cat) && !s.keepCat) s.cat=S.cats[s.kind][0]||'';
+    h+=`<label class="lbl">Art</label>`+catSelect(sc,s.kind,s.cat);
+  }
+  h+=`<label class="lbl">Betrag</label><div class="amt"><input data-${sc}="amount" inputmode="decimal" autocomplete="off" enterkeyhint="done" placeholder="0,00" value="${esc(s.amount)}"><span>€</span></div>`;
+  h+=`<div class="two"><div><label class="lbl">Datum</label><input type="date" data-${sc}="date" value="${esc(s.date)}" min="${S.settings.start}"></div>`+
+     `<div><label class="lbl">Notiz</label><input data-${sc}="note" placeholder="optional" value="${esc(s.note)}"></div></div>`;
+  return h;
+}
+function txFromForm(s){
+  const amt=parseAmt(s.amount);
+  if(!(amt>0)) return {err:'Bitte einen gültigen Betrag eingeben'};
+  if(!s.date) return {err:'Bitte ein Datum wählen'};
+  if(s.date<S.settings.start) return {err:'Datum liegt vor Beginn der Aufzeichnung ('+fmtDate(S.settings.start)+')'};
+  const x={date:s.date,amount:amt,note:(s.note||'').trim()};
+  if(s.kind==='umbuchung'){ x.kind=s.transfer; x.acct=null; x.cat=null; }
+  else { x.kind=s.kind; x.acct=s.acct; x.cat=s.cat; }
+  return {x};
+}
+function book(){
+  const r=txFromForm(F); if(r.err){ toast(r.err); return; }
+  const x=Object.assign({id:uid(),fixed:false},r.x);
+  S.tx.push(x); save();
+  if(x.cat) F.lastCat[x.kind]=x.cat;
+  F.amount=''; F.note='';
+  toast('Gebucht ✓  '+eur(x.amount));
+  render();
+}
+function txLabel(x){ return x.kind==='auszahlung'?'Bargeldauszahlung':x.kind==='einzahlung'?'Bareinzahlung':x.cat; }
+function txRow(x){
+  const sign=x.kind==='einnahme'?'+':x.kind==='ausgabe'?'−':'⇄';
+  const cls=x.kind==='einnahme'?'pos':x.kind==='ausgabe'?'':'muted';
+  const where=x.kind==='auszahlung'?'Konto → Bar':x.kind==='einzahlung'?'Bar → Konto':(x.acct==='bar'?'Bar':'Konto');
+  const dotc=x.acct||'tr';
+  return `<button class="row" data-a="edit-tx" data-id="${x.id}"><span class="dot ${dotc}"></span><span class="r-main">`+
+    `<span class="r-title">${esc(txLabel(x))}${x.fixed?'<span class="badge">fix</span>':''}</span>`+
+    `<span class="r-sub">${fmtDate(x.date)} · ${where}${x.note?' · '+esc(x.note):''}</span></span>`+
+    `<span class="r-amt ${cls}">${sign} ${eur(x.amount)}</span></button>`;
+}
+function editTx(id){
+  const x=S.tx.find(t=>t.id===id); if(!x) return;
+  const isT=x.kind==='auszahlung'||x.kind==='einzahlung';
+  openSheet({title:'Buchung bearbeiten', s:{kind:isT?'umbuchung':x.kind, transfer:isT?x.kind:'auszahlung', acct:x.acct||'konto', cat:x.cat||'', keepCat:true, amount:amtStr(x.amount), date:x.date, note:x.note||''},
+    render(s){
+      let h='';
+      if(x.recId){ const r=S.rec.find(r=>r.id===x.recId); h+=`<div class="info">Automatisch gebucht aus Fixposten <b>${esc(r?(r.name||r.cat):'(gelöscht)')}</b>. Änderungen gelten nur für diese eine Buchung.</div>`; }
+      h+=`<div class="card">${txForm(s,'m')}</div>`;
+      h+=`<div class="btns"><button class="btn danger" data-a="del-tx">Löschen</button><button class="btn primary" data-a="save-tx">Speichern</button></div>`;
+      return h;
+    },
+    save(){
+      const r=txFromForm(this.s); if(r.err){ toast(r.err); return; }
+      Object.assign(x,r.x); if(x.recId) x.manual=true;
+      save(); closeSheet(); toast('Gespeichert ✓'); render();
+    },
+    del(){
+      if(!confirm('Diese Buchung wirklich löschen?')) return;
+      if(x.recId){ const r=S.rec.find(r=>r.id===x.recId); if(r && !r.skip.includes(x.due)) r.skip.push(x.due); }
+      S.tx=S.tx.filter(t=>t.id!==id); save(); closeSheet(); toast('Gelöscht'); render();
+    }});
+}
+
+/* ---------- Ansicht: Eingabe ---------- */
+function backupBanner(){
+  if(!S.tx.length) return '';
+  const lb=S.settings.lastBackup; const days=lb?Math.floor((Date.now()-new Date(lb).getTime())/864e5):null;
+  if(days!==null && days<30) return '';
+  return `<div class="banner"><span>${days===null?'Noch kein Backup gespeichert.':'Letztes Backup vor '+days+' Tagen.'}</span><button data-a="backup">Jetzt sichern</button></div>`;
+}
+function viewInput(){
+  const label={ausgabe:'Ausgabe buchen',einnahme:'Einnahme buchen',umbuchung:'Umbuchung buchen'}[F.kind];
+  const cls=F.kind==='einnahme'?'green':'primary';
+  const recent=S.tx.slice().sort(txSort).slice(0,12);
+  return backupBanner()+
+    `<div class="card">${txForm(F,'f')}<button class="btn ${cls}" data-a="book">${label}</button></div>`+
+    `<div class="sec"><span>Letzte Buchungen</span></div>`+
+    (recent.length?`<div class="card list">${recent.map(txRow).join('')}</div>`:`<div class="card empty-state">Noch keine Buchungen.<br>Trag oben deine erste Ausgabe ein.</div>`);
+}
+
+/* ---------- Ansicht: Fixposten ---------- */
+function viewFix(){
+  const t=todayISO(); let inc=0, exp=0;
+  for(const r of S.rec){ if(!recActive(r)) continue; const v=amountAt(r,t)*INTERVALS[r.interval].pm; if(r.kind==='einnahme') inc+=v; else exp+=v; }
+  const item=r=>{
+    const nd=nextDue(r,addDays(t,1));
+    const sub=[INTERVALS[r.interval].label, r.acct==='bar'?'Bar':'Konto', recActive(r)?(nd?'nächste: '+fmtDate(nd):'keine weitere'):'beendet '+fmtDate(r.end)].join(' · ');
+    return `<button class="row" data-a="edit-rec" data-id="${r.id}" style="${recActive(r)?'':'opacity:.5'}"><span class="dot ${r.acct}"></span><span class="r-main"><span class="r-title">${esc(r.name||r.cat)}</span><span class="r-sub">${esc(r.name&&r.name!==r.cat?r.cat+' · ':'')}${sub}</span></span><span class="r-amt ${r.kind==='einnahme'?'pos':''}">${eur(amountAt(r,t))}</span></button>`;
+  };
+  const list=kind=>{ const rs=S.rec.filter(r=>r.kind===kind).sort((a,b)=>(recActive(b)-recActive(a))||(amountAt(b,t)-amountAt(a,t)));
+    return rs.length?`<div class="card list">${rs.map(item).join('')}</div>`:`<div class="card empty-state">Noch keine Einträge.</div>`; };
+  return `<div class="kpis">
+      <div class="kpi"><div class="k">Planbare Einnahmen</div><div class="v pos">${eur(Math.round(inc))}</div><div class="hint" style="margin:0">pro Monat</div></div>
+      <div class="kpi"><div class="k">Fixe Kosten</div><div class="v">${eur(Math.round(exp))}</div><div class="hint" style="margin:0">pro Monat</div></div>
+    </div>
+    <div class="card"><div class="ln" style="padding-left:0"><span>Bleibt monatlich für variable Ausgaben</span><b class="${inc-exp<0?'neg':''}">${eur(Math.round(inc-exp))}</b></div>
+    <div class="hint" style="margin:2px 0 0">Wöchentliche, quartalsweise und jährliche Posten sind auf einen Monat umgerechnet.</div></div>
+    <button class="btn primary" data-a="new-rec">＋ Fixposten hinzufügen</button>
+    <div class="sec"><span>Planbare Einnahmen</span></div>${list('einnahme')}
+    <div class="sec"><span>Fixe Kosten</span></div>${list('ausgabe')}
+    <p class="hint">Fixposten werden automatisch zum jeweiligen Datum gebucht, sobald du die App öffnest – auch rückwirkend, falls du sie ein paar Tage nicht geöffnet hast.</p>`;
+}
+function recFormNew(){
+  const t=todayISO();
+  openSheet({title:'Neuer Fixposten', s:{kind:'ausgabe',acct:'konto',cat:'Miete',name:'',amount:'',interval:'m1',start:t<S.settings.start?S.settings.start:t,end:''},
+    render(s){
+      if(!S.cats[s.kind].includes(s.cat)) s.cat=S.cats[s.kind][0]||'';
+      return `<div class="card">${seg('m','kind',s.kind,[['ausgabe','Fixe Kosten'],['einnahme','Planbare Einnahme']])}
+        ${seg('m','acct',s.acct,[['konto','Konto'],['bar','Bar']])}
+        <label class="lbl">Art</label>${catSelect('m',s.kind,s.cat)}
+        <label class="lbl">Bezeichnung (optional)</label><input data-m="name" placeholder="z. B. Miete Wohnung" value="${esc(s.name)}">
+        <label class="lbl">Betrag</label><div class="amt"><input data-m="amount" inputmode="decimal" placeholder="0,00" value="${esc(s.amount)}"><span>€</span></div>
+        <label class="lbl">Intervall</label><select data-m="interval">${Object.entries(INTERVALS).map(([k,v])=>`<option value="${k}" ${k===s.interval?'selected':''}>${v.label}</option>`).join('')}</select>
+        <div class="two"><div><label class="lbl">Erste Buchung am</label><input type="date" data-m="start" value="${s.start}" min="${S.settings.start}"></div>
+        <div><label class="lbl">Endet am (optional)</label><input type="date" data-m="end" value="${s.end}"></div></div></div>
+        <p class="hint">Das Datum der ersten Buchung legt auch den Buchungstag fest (z. B. jeden 1. oder 28. des Monats).</p>
+        <button class="btn primary" data-a="save-rec">Fixposten anlegen</button>`;
+    },
+    save(){
+      const s=this.s, amt=parseAmt(s.amount);
+      if(!(amt>0)) return toast('Bitte einen gültigen Betrag eingeben');
+      if(!s.start) return toast('Bitte das Datum der ersten Buchung wählen');
+      if(s.start<S.settings.start) return toast('Datum liegt vor Beginn der Aufzeichnung');
+      if(s.end && s.end<s.start) return toast('Enddatum liegt vor dem Start');
+      S.rec.push({id:uid(),kind:s.kind,acct:s.acct,cat:s.cat,name:s.name.trim(),interval:s.interval,start:s.start,end:s.end||null,versions:[{from:s.start,amount:amt}],skip:[]});
+      const n=runRecurring(); save(); closeSheet();
+      toast('Fixposten angelegt'+(n?' · '+n+' Buchung'+(n>1?'en':'')+' nachgetragen':'')); render();
+    }});
+}
+function recFormEdit(id){
+  const r=S.rec.find(r=>r.id===id); if(!r) return;
+  const t=todayISO();
+  openSheet({title:r.name||r.cat, s:{acct:r.acct,cat:r.cat,keepCat:true,name:r.name||'',end:r.end||'',newAmount:'',newFrom:t<r.start?r.start:t},
+    render(s){
+      const hist=r.versions.map(v=>`<div class="ln" style="padding-left:0"><span>ab ${fmtDate(v.from)}</span><span>${eur(v.amount)}</span></div>`).join('');
+      return `<div class="card"><div class="ln" style="padding-left:0"><span class="muted">Typ</span><span>${r.kind==='einnahme'?'Planbare Einnahme':'Fixe Kosten'}</span></div>
+          <div class="ln" style="padding-left:0"><span class="muted">Intervall</span><span>${INTERVALS[r.interval].label}</span></div>
+          <div class="ln" style="padding-left:0"><span class="muted">Erste Buchung</span><span>${fmtDate(r.start)}</span></div></div>
+        <div class="card">${seg('m','acct',s.acct,[['konto','Konto'],['bar','Bar']])}
+          <label class="lbl">Art</label>${catSelect('m',r.kind,s.cat)}
+          <label class="lbl">Bezeichnung</label><input data-m="name" value="${esc(s.name)}" placeholder="optional">
+          <label class="lbl">Endet am (leer = unbefristet)</label><input type="date" data-m="end" value="${esc(s.end)}"></div>
+        <div class="sec"><span>Betrag</span></div>
+        <div class="card hist">${hist}
+          <label class="lbl">Neuer Betrag (z. B. Mieterhöhung)</label><div class="amt"><input data-m="newAmount" inputmode="decimal" placeholder="0,00" value="${esc(s.newAmount)}"><span>€</span></div>
+          <label class="lbl">Gilt ab</label><input type="date" data-m="newFrom" value="${esc(s.newFrom)}" min="${r.start}">
+          <p class="hint">Buchungen vor diesem Datum bleiben unverändert.</p></div>
+        <p class="hint">Bezeichnung, Art und Konto/Bar gelten für alle künftigen Buchungen. Intervall und Starttermin lassen sich nicht ändern – dafür den Posten beenden und neu anlegen.</p>
+        <div class="btns"><button class="btn danger" data-a="del-rec">Löschen</button><button class="btn primary" data-a="save-rec">Speichern</button></div>`;
+    },
+    save(){
+      const s=this.s;
+      if(s.end && s.end<r.start) return toast('Enddatum liegt vor dem Start');
+      if(s.newAmount!==''){
+        const a=parseAmt(s.newAmount);
+        if(!(a>0)) return toast('Neuer Betrag ist ungültig');
+        if(!s.newFrom || s.newFrom<r.start) return toast('Bitte ein gültiges „Gilt ab“-Datum wählen');
+        r.versions=r.versions.filter(v=>v.from!==s.newFrom); r.versions.push({from:s.newFrom,amount:a});
+        r.versions.sort((x,y)=>x.from<y.from?-1:1);
+        for(const x of S.tx) if(x.recId===r.id && !x.manual && x.date>=s.newFrom) x.amount=amountAt(r,x.date);
+      }
+      r.acct=s.acct; r.cat=s.cat; r.name=s.name.trim(); r.end=s.end||null;
+      for(const x of S.tx) if(x.recId===r.id && !x.manual && x.date>t){ x.acct=r.acct; x.cat=r.cat; x.note=r.name; }
+      if(r.end) S.tx=S.tx.filter(x=>!(x.recId===r.id && !x.manual && x.date>r.end));
+      save(); closeSheet(); toast('Gespeichert ✓'); render();
+    },
+    del(){
+      if(!confirm('Fixposten löschen? Bereits gebuchte Einträge bleiben in der Auswertung erhalten.')) return;
+      S.rec=S.rec.filter(x=>x.id!==id);
+      S.tx.forEach(x=>{ if(x.recId===id){ delete x.recId; } });
+      save(); closeSheet(); toast('Fixposten gelöscht'); render();
+    }});
+}
+
+/* ---------- Ansicht: Analyse ---------- */
+function kpi(k,v,cls=''){ return `<div class="kpi"><div class="k">${k}</div><div class="v ${cls}">${v}</div></div>`; }
+function catLines(o){
+  const e=Object.entries(o).sort((a,b)=>b[1]-a[1]);
+  return e.length ? e.map(([k,v])=>`<div class="ln"><span>${esc(k)}</span><span>${eur(v)}</span></div>`).join('') : `<div class="ln empty"><span>keine</span><span>–</span></div>`;
+}
+function grp(tag,title,o){
+  return `<div class="grp"><div class="grp-h"><span><span class="tag ${tag}">${tag==='bar'?'Bar':'Konto'}</span> ${title}</span><span>${eur(sumObj(o))}</span></div>${catLines(o)}</div>`;
+}
+function catBars(o,color){
+  const e=Object.entries(o).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]); if(!e.length) return '<div class="empty-state">Keine Ausgaben</div>';
+  const max=e[0][1], tot=sumObj(o);
+  return '<div class="bars">'+e.map(([k,v])=>`<div class="b"><div class="bt"><span>${esc(k)}</span><span>${eur(v)} <span class="muted">· ${pct(v,tot)}</span></span></div><div class="track"><div class="fill" style="width:${(v/max*100).toFixed(1)}%;${color?'background:'+color:''}"></div></div></div>`).join('')+'</div>';
+}
+function stockCard(title,tag,rows,end,endLabel){
+  return `<div class="card"><div class="ch"><span><span class="tag ${tag}">${tag==='bar'?'Bar':'Konto'}</span> ${title}</span></div>`+
+    rows.map(([l,v,b])=>`<div class="ln ${b?'':'ind'}" style="${b?'padding-left:0':''}"><span>${b?'<b>'+l+'</b>':l}</span><span>${b?'<b>'+eur(v)+'</b>':eur(v)}</span></div>`).join('')+
+    `<div class="total"><span>${endLabel}</span><span>${eur(end)}</span></div></div>`;
+}
+function viewMonth(){
+  const ym=UI.ym, startYm=ymOf(S.settings.start);
+  let h=`<div class="nav"><button data-a="prev">‹</button><span class="lab">${ymLabel(ym)}</span><button data-a="next">›</button></div>`;
+  if(ym<startYm) return h+`<div class="card empty-state">Dieser Monat liegt vor dem Beginn deiner Aufzeichnung (${ymLabel(startYm)}).</div>`;
+  const bt=balanceTable(), b=bt[ym]; const g=b.g;
+  h+=`<div class="kpis">${kpi('Einnahmen',eur(g.inc),'pos')}${kpi('Ausgaben',eur(g.exp))}${kpi(g.res>=0?'Monatsgewinn':'Monatsverlust',eur(g.res),g.res>=0?'pos':'neg')}${kpi('Sparquote',pct(g.res,g.inc))}</div>`;
+  const exp=expectedRest(ym);
+  if(exp.length){
+    const ein=exp.filter(e=>e.kind==='einnahme').reduce((a,e)=>a+e.amount,0), aus=exp.filter(e=>e.kind==='ausgabe').reduce((a,e)=>a+e.amount,0);
+    h+=`<div class="card"><details><summary class="ch"><span><span class="chev">›</span> Bis Monatsende erwartet</span><span class="${g.res+ein-aus<0?'neg':''}">${eur(g.res+ein-aus)}</span></summary>`+
+      exp.map(e=>`<div class="ln"><span>${fmtDate(e.date).slice(0,6)} ${esc(e.name||e.cat)}</span><span class="${e.kind==='einnahme'?'pos':''}">${e.kind==='einnahme'?'+':'−'} ${eur(e.amount)}</span></div>`).join('')+
+      `<div class="hint" style="margin:6px 0 0">Prognose fürs Monatsergebnis inkl. noch ausstehender Fixposten.</div></details></div>`;
+  }
+  h+=`<div class="card"><div class="ch"><span>Einnahmen</span><span class="pos">${eur(g.inc)}</span></div>${grp('konto','planbar',g.inKPlan)}${grp('konto','außerplanmäßig',g.inKExtra)}${grp('bar','Einnahmen',g.inBar)}</div>`;
+  h+=`<div class="card"><div class="ch"><span>Ausgaben</span><span>${eur(g.exp)}</span></div>${grp('konto','fixe Kosten',g.outKFix)}${grp('konto','variable Kosten',g.outKVar)}${grp('bar','Ausgaben',g.outBar)}</div>`;
+  h+=`<div class="card"><div class="ch"><span>Ausgaben nach Kategorie</span></div>${catBars(g.byCat)}</div>`;
+  h+=stockCard('Kontostand','konto',[['Anfangsbestand',b.ks,1],['+ Einnahmen Konto',g.inK],['− Ausgaben Konto',g.outK],['− Bargeldauszahlungen',g.aus],['+ Bareinzahlungen',g.ein]],b.ke,'Endbestand Konto');
+  h+=stockCard('Bargeld','bar',[['Anfangsbestand',b.bs,1],['+ Einnahmen Bar',g.inB],['− Ausgaben Bar',g.outB],['+ Bargeldauszahlungen',g.aus],['− Bareinzahlungen',g.ein]],b.be,'Endbestand Bargeld');
+  const ok=Math.abs((b.ke+b.be)-(b.ks+b.bs)-g.res)<1;
+  h+=`<div class="card"><div class="ln" style="padding-left:0"><span>Gesamtbestand Monatsende</span><b>${eur(b.ke+b.be)}</b></div><div class="check ${ok?'pos':'neg'}">${ok?'✓ Bestandsveränderung = Monatsergebnis':'⚠ Rechenfehler – bitte melden'}</div></div>`;
+  h+=`<div class="sec"><span>Alle Buchungen (${g.list.length})</span></div>`+(g.list.length?`<div class="card list">${g.list.map(txRow).join('')}</div>`:`<div class="card empty-state">Keine Buchungen in diesem Monat.</div>`);
+  return h;
+}
+function yearChart(rows){
+  const W=340,H=170,pl=4,pb=20,pt=8; const max=Math.max(1,...rows.map(r=>Math.max(r.inc,r.exp)));
+  const gw=(W-pl)/12, bw=gw*0.32;
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Einnahmen und Ausgaben je Monat"><line x1="0" y1="${H-pb}" x2="${W}" y2="${H-pb}" stroke="var(--line)"/>`;
+  rows.forEach((r,i)=>{
+    const x=pl+i*gw+gw/2, hi=(H-pb-pt)*r.inc/max, he=(H-pb-pt)*r.exp/max;
+    if(r.inc) s+=`<rect x="${(x-bw-1).toFixed(1)}" y="${(H-pb-hi).toFixed(1)}" width="${bw.toFixed(1)}" height="${hi.toFixed(1)}" rx="2" fill="var(--bar)"/>`;
+    if(r.exp) s+=`<rect x="${(x+1).toFixed(1)}" y="${(H-pb-he).toFixed(1)}" width="${bw.toFixed(1)}" height="${he.toFixed(1)}" rx="2" fill="var(--neg)" opacity=".85"/>`;
+    s+=`<text x="${x.toFixed(1)}" y="${H-5}" font-size="10" text-anchor="middle" fill="var(--muted)">${MSHORT[i].slice(0,3)}</text>`;
+  });
+  return s+'</svg>';
+}
+function viewYear(){
+  const y=UI.year, startY=+S.settings.start.slice(0,4);
+  let h=`<div class="nav"><button data-a="prev">‹</button><span class="lab">${y}</span><button data-a="next">›</button></div>`;
+  if(y<startY) return h+`<div class="card empty-state">Deine Aufzeichnung beginnt erst ${startY}.</div>`;
+  const bt=balanceTable(), act=activeMonths(y), n=act.length;
+  const rows=[]; let I=0,E=0; const byCat={}, inCat={};
+  for(let m=1;m<=12;m++){
+    const ym=y+'-'+pad(m), b=bt[ym], on=act.includes(ym);
+    const g=on?b.g:null; const r={ym,m,on,inc:g?g.inc:0,exp:g?g.exp:0,res:g?g.res:0,ke:on?b.ke:null,be:on?b.be:null,g};
+    rows.push(r); I+=r.inc; E+=r.exp;
+    if(g){ for(const k in g.byCat){ (byCat[k]=byCat[k]||Array(12).fill(0))[m-1]+=g.byCat[k]; } for(const k in g.inByCat){ inCat[k]=(inCat[k]||0)+g.inByCat[k]; } }
+  }
+  h+=`<div class="kpis">${kpi('Einnahmen',eur(I),'pos')}${kpi('Ausgaben',eur(E))}${kpi(I-E>=0?'Jahresgewinn':'Jahresverlust',eur(I-E),I-E>=0?'pos':'neg')}${kpi('Sparquote',pct(I-E,I))}</div>`;
+  h+=`<div class="card chart"><div class="ch"><span>Einnahmen vs. Ausgaben</span></div>${yearChart(rows)}<div class="legend"><span><i style="background:var(--bar)"></i>Einnahmen</span><span><i style="background:var(--neg)"></i>Ausgaben</span></div></div>`;
+  h+=`<div class="card"><div class="ch"><span>Monate</span></div><div class="tbl"><table><tr><th>Monat</th><th>Einnahmen</th><th>Ausgaben</th><th>Ergebnis</th><th>Konto Ende</th><th>Bar Ende</th></tr>`+
+    rows.map(r=>`<tr class="${r.on?'click':''}" ${r.on?`data-a="goto-month" data-ym="${r.ym}"`:''}><td>${MSHORT[r.m-1]}</td><td>${r.on?eur(r.inc):'–'}</td><td>${r.on?eur(r.exp):'–'}</td><td class="${r.res<0?'neg':''}">${r.on?eur(r.res):'–'}</td><td>${r.on?eur(r.ke):'–'}</td><td>${r.on?eur(r.be):'–'}</td></tr>`).join('')+
+    `<tr class="sum"><td>Summe</td><td>${eur(I)}</td><td>${eur(E)}</td><td class="${I-E<0?'neg':''}">${eur(I-E)}</td><td></td><td></td></tr>`+
+    `<tr><td class="muted">Ø / Monat</td><td>${eur(n?I/n:0)}</td><td>${eur(n?E/n:0)}</td><td>${eur(n?(I-E)/n:0)}</td><td></td><td></td></tr></table></div>`+
+    `<div class="hint">Ø über ${n} erfasste${n===1?'n':''} Monat${n===1?'':'e'} · Monat antippen für Details</div></div>`;
+  if(n){
+    const first=bt[act[0]], last=bt[act[n-1]];
+    h+=`<div class="card"><div class="ch"><span>Bestände</span></div><div class="tbl"><table><tr><th></th><th>${MSHORT[+act[0].slice(5)-1]} Anfang</th><th>${MSHORT[+act[n-1].slice(5)-1]} Ende</th><th>Veränderung</th></tr>`+
+      `<tr><td><span class="tag">Konto</span></td><td>${eur(first.ks)}</td><td>${eur(last.ke)}</td><td>${eur(last.ke-first.ks)}</td></tr>`+
+      `<tr><td><span class="tag bar">Bar</span></td><td>${eur(first.bs)}</td><td>${eur(last.be)}</td><td>${eur(last.be-first.bs)}</td></tr>`+
+      `<tr class="sum"><td>Gesamt</td><td>${eur(first.ks+first.bs)}</td><td>${eur(last.ke+last.be)}</td><td>${eur(last.ke+last.be-first.ks-first.bs)}</td></tr></table></div></div>`;
+  }
+  const tot={}; for(const k in byCat) tot[k]=byCat[k].reduce((a,b)=>a+b,0);
+  h+=`<div class="card"><div class="ch"><span>Ausgaben nach Kategorie</span><span>${eur(E)}</span></div>${catBars(tot)}</div>`;
+  const cats=Object.keys(byCat).sort((a,b)=>tot[b]-tot[a]);
+  if(cats.length){
+    h+=`<div class="card"><div class="ch"><span>Kostenstellen je Monat</span></div><div class="tbl"><table><tr><th>Kategorie</th>${MSHORT.map(m=>`<th>${m}</th>`).join('')}<th>Summe</th><th>Ø/Monat</th></tr>`+
+      cats.map(k=>`<tr><td>${esc(k)}</td>${byCat[k].map(v=>`<td>${v?eur(v):'–'}</td>`).join('')}<td><b>${eur(tot[k])}</b></td><td>${eur(n?tot[k]/n:0)}</td></tr>`).join('')+
+      `<tr class="sum"><td>Summe</td>${rows.map(r=>`<td>${r.on?eur(r.exp):'–'}</td>`).join('')}<td>${eur(E)}</td><td>${eur(n?E/n:0)}</td></tr></table></div><div class="hint">Tabelle seitlich wischen</div></div>`;
+  }
+  h+=`<div class="card"><div class="ch"><span>Einnahmen nach Kategorie</span><span class="pos">${eur(I)}</span></div>${catBars(inCat,'var(--bar)')}</div>`;
+  return h;
+}
+function viewAnalyse(){
+  return seg('a','amode',UI.amode,[['monat','Monat'],['jahr','Jahr']]) + (UI.amode==='monat'?viewMonth():viewYear());
+}
+
+/* ---------- Ansicht: Einstellungen ---------- */
+function viewSettings(){
+  const lb=S.settings.lastBackup;
+  const years=[]; for(let y=+S.settings.start.slice(0,4); y<=+lastYm().slice(0,4); y++) years.push(y);
+  const catList=kind=>S.cats[kind].map((c,i)=>`<div class="catrow"><span>${esc(c)}</span><button data-a="cat-up" data-kind="${kind}" data-i="${i}" ${i?'':'disabled style="opacity:.3"'}>↑</button><button data-a="cat-ren" data-kind="${kind}" data-i="${i}">Umbenennen</button><button data-a="cat-del" data-kind="${kind}" data-i="${i}">✕</button></div>`).join('');
+  return `<div class="sec"><span>Datensicherung</span></div>
+    <div class="card"><div class="hint" style="margin:0 0 4px">Alle Daten liegen nur auf diesem iPhone. Sichere regelmäßig ein Backup, z. B. in iCloud Drive („In Dateien sichern“).</div>
+      <div class="ln" style="padding-left:0"><span>Letztes Backup</span><span class="${lb?'':'neg'}">${lb?fmtDate(lb.slice(0,10)):'noch keins'}</span></div>
+      <div class="btns"><button class="btn primary" data-a="backup">Backup speichern</button><button class="btn" data-a="restore">Backup laden</button></div></div>
+    <div class="sec"><span>Excel-Export</span></div>
+    <div class="card"><div class="hint" style="margin:0 0 6px">Jahresübersicht, alle Monate im Aufbau des Haushaltsbuchs und eine Liste aller Buchungen.</div>
+      <div class="addrow"><select id="xyear">${years.map(y=>`<option ${y===UI.year?'selected':''}>${y}</option>`).join('')}</select><button class="btn green small" data-a="export">Exportieren</button></div></div>
+    <div class="sec"><span>Startwerte</span></div>
+    <div class="card"><label class="lbl" style="margin-top:0">Beginn der Aufzeichnung</label><input type="month" id="s-start" value="${ymOf(S.settings.start)}">
+      <div class="two"><div><label class="lbl">Kontostand zu Beginn</label><input id="s-k" inputmode="decimal" value="${amtStr(S.settings.kontoStart)}"></div>
+      <div><label class="lbl">Bargeld zu Beginn</label><input id="s-b" inputmode="decimal" value="${amtStr(S.settings.barStart)}"></div></div>
+      <button class="btn" data-a="save-start">Startwerte speichern</button></div>
+    <div class="sec"><span>Kategorien Ausgaben</span></div><div class="card">${catList('ausgabe')}<div class="addrow"><input id="nc-ausgabe" placeholder="Neue Kategorie"><button class="btn small primary" data-a="cat-add" data-kind="ausgabe">＋</button></div></div>
+    <div class="sec"><span>Kategorien Einnahmen</span></div><div class="card">${catList('einnahme')}<div class="addrow"><input id="nc-einnahme" placeholder="Neue Kategorie"><button class="btn small primary" data-a="cat-add" data-kind="einnahme">＋</button></div></div>
+    <div class="sec"><span>Zurücksetzen</span></div>
+    <div class="card"><button class="btn danger" style="margin:0" data-a="wipe">Alle Daten löschen</button></div>
+    <p class="hint" style="text-align:center">Haushaltsbuch ${APP_VERSION} · ${S.tx.length} Buchungen · ${S.rec.length} Fixposten</p>`;
+}
+
+/* ---------- Ersteinrichtung ---------- */
+function viewSetup(){
+  return `<div class="card"><p style="margin:0 0 6px;font-size:17px"><b>Willkommen!</b> Bevor es losgeht, brauche ich deine Startwerte – genau wie der Anfangsbestand im Januar deiner Excel.</p>
+    <label class="lbl">Beginn der Aufzeichnung</label><input type="month" id="s-start" value="${ymOf(todayISO())}">
+    <label class="lbl">Kontostand am 1. dieses Monats</label><div class="amt"><input id="s-k" inputmode="decimal" placeholder="0,00"><span>€</span></div>
+    <label class="lbl">Bargeld am 1. dieses Monats</label><div class="amt"><input id="s-b" inputmode="decimal" placeholder="0,00"><span>€</span></div>
+    <button class="btn primary" data-a="setup">Los geht’s</button></div>
+    <div class="card"><div class="hint" style="margin:0">Du hast schon ein Backup? Dann kannst du es hier wiederherstellen.</div><button class="btn" data-a="restore">Backup laden</button></div>`;
+}
+
+/* ---------- Datei-Ausgabe (Teilen-Menü auf dem iPhone) ---------- */
+async function deliver(blob,filename){
+  try{
+    const file=new File([blob],filename,{type:blob.type});
+    if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file]}); return true; }
+  }catch(e){ if(e.name==='AbortError') return false; }
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),5000); return true;
+}
+async function doBackup(){
+  const data=JSON.stringify({app:'haushaltsbuch',exported:new Date().toISOString(),data:S},null,1);
+  const ok=await deliver(new Blob([data],{type:'application/json'}),'Haushaltsbuch-Backup-'+todayISO()+'.json');
+  if(ok){ S.settings.lastBackup=new Date().toISOString(); save(); toast('Backup erstellt ✓'); render(); }
+}
+function doRestore(file){
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const j=JSON.parse(rd.result); const d=j.data||j;
+      if(!d || d.v!==1 || !Array.isArray(d.tx)) throw new Error('Keine gültige Backup-Datei');
+      if(S.setup && S.tx.length && !confirm('Backup vom '+(j.exported?fmtDate(j.exported.slice(0,10)):'?')+' laden? Die aktuellen Daten auf diesem Gerät werden ersetzt.')) return;
+      S=normalize(d); S.setup=true; save(); runRecurring(); UI.tab='eingabe'; toast('Backup geladen ✓ ('+S.tx.length+' Buchungen)'); render();
+    }catch(e){ alert('Backup konnte nicht geladen werden: '+e.message); }
+  };
+  rd.readAsText(file);
+}
+
+/* ---------- Excel-Export (eigener XLSX-Schreiber, funktioniert offline) ---------- */
+const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function crc32(u){let c=0xFFFFFFFF;for(let i=0;i<u.length;i++)c=CRC[(c^u[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+function zipBlob(files,type){
+  const enc=new TextEncoder(), parts=[], central=[]; let off=0;
+  const dt=new Date(), time=(dt.getHours()<<11)|(dt.getMinutes()<<5)|(dt.getSeconds()>>1), date=((dt.getFullYear()-1980)<<9)|((dt.getMonth()+1)<<5)|dt.getDate();
+  for(const f of files){
+    const name=enc.encode(f.name), data=enc.encode(f.data), crc=crc32(data);
+    const h=new DataView(new ArrayBuffer(30));
+    h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(8,0,true);h.setUint16(10,time,true);h.setUint16(12,date,true);
+    h.setUint32(14,crc,true);h.setUint32(18,data.length,true);h.setUint32(22,data.length,true);h.setUint16(26,name.length,true);h.setUint16(28,0,true);
+    parts.push(new Uint8Array(h.buffer),name,data);
+    const c=new DataView(new ArrayBuffer(46));
+    c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(10,0,true);c.setUint16(12,time,true);c.setUint16(14,date,true);
+    c.setUint32(16,crc,true);c.setUint32(20,data.length,true);c.setUint32(24,data.length,true);c.setUint16(28,name.length,true);
+    c.setUint16(30,0,true);c.setUint16(32,0,true);c.setUint16(34,0,true);c.setUint16(36,0,true);c.setUint32(38,0,true);c.setUint32(42,off,true);
+    central.push(new Uint8Array(c.buffer),name); off+=30+name.length+data.length;
+  }
+  const cd=central.reduce((a,b)=>a+b.length,0), e=new DataView(new ArrayBuffer(22));
+  e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cd,true);e.setUint32(16,off,true);
+  return new Blob([...parts,...central,new Uint8Array(e.buffer)],{type});
+}
+const X={T:1,HINT:2,HS:3,HG:4,HB:5,SUB:6,TXT:7,EUR:8,TT:9,TE:10,PCT:11,DATE:12,GRP:13,ZT:14,ZE:15,CH:16,CHR:17,TP:18,BOLD:19};
+const XSTYLES=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<numFmts count="3"><numFmt numFmtId="164" formatCode="#,##0.00 &quot;€&quot;;[Red]-#,##0.00 &quot;€&quot;;&quot;–&quot;"/><numFmt numFmtId="165" formatCode="0.0%"/><numFmt numFmtId="166" formatCode="DD.MM.YYYY"/></numFmts>
+<fonts count="7">
+<font><sz val="10"/><color rgb="FF222222"/><name val="Arial"/></font>
+<font><b/><sz val="16"/><color rgb="FF1F2D3D"/><name val="Arial"/></font>
+<font><i/><sz val="9"/><color rgb="FF7A828C"/><name val="Arial"/></font>
+<font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Arial"/></font>
+<font><b/><sz val="10"/><color rgb="FF1A1A1A"/><name val="Arial"/></font>
+<font><i/><sz val="9"/><color rgb="FF6B7280"/><name val="Arial"/></font>
+<font><b/><sz val="9"/><color rgb="FF555B63"/><name val="Arial"/></font>
+</fonts>
+<fills count="10">
+<fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FF3E4A59"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FF2E7D5B"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FF1F4E79"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFF3F4F6"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFDCE7F3"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFDCEFE5"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFE6E9ED"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFFAFAFA"/><bgColor indexed="64"/></patternFill></fill>
+</fills>
+<borders count="3">
+<border><left/><right/><top/><bottom/><diagonal/></border>
+<border><left style="thin"><color rgb="FFD0D4DA"/></left><right style="thin"><color rgb="FFD0D4DA"/></right><top style="thin"><color rgb="FFD0D4DA"/></top><bottom style="thin"><color rgb="FFD0D4DA"/></bottom><diagonal/></border>
+<border><left style="thin"><color rgb="FFD0D4DA"/></left><right style="thin"><color rgb="FFD0D4DA"/></right><top style="medium"><color rgb="FF8A929C"/></top><bottom style="double"><color rgb="FF5A6470"/></bottom><diagonal/></border>
+</borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="20">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="0" fontId="3" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="3" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="3" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="4" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"/>
+<xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="4" fillId="8" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
+<xf numFmtId="164" fontId="4" fillId="8" borderId="2" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1"/>
+<xf numFmtId="165" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"/>
+<xf numFmtId="166" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left"/></xf>
+<xf numFmtId="0" fontId="5" fillId="9" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="4" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
+<xf numFmtId="164" fontId="4" fillId="5" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="6" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="6" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right"/></xf>
+<xf numFmtId="165" fontId="4" fillId="8" borderId="2" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="4" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1"/>
+</cellXfs>
+<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+</styleSheet>`;
+function colL(c){ let s=''; while(c>0){ const m=(c-1)%26; s=String.fromCharCode(65+m)+s; c=Math.floor((c-1)/26); } return s; }
+const xEsc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'');
+function xSheet(name,cols){ return {name,rows:{},merges:[],cols}; }
+function xs(sh,r,c,v,s){ (sh.rows[r]=sh.rows[r]||{})[c]={v,s}; }
+function xm(sh,r,c1,c2,v,s){ xs(sh,r,c1,v,s); for(let c=c1+1;c<=c2;c++) xs(sh,r,c,null,s); sh.merges.push(colL(c1)+r+':'+colL(c2)+r); }
+function serial(d){ const {y,m,d:dd}=pISO(d); return (Date.UTC(y,m-1,dd)-Date.UTC(1899,11,30))/864e5; }
+function sheetXml(sh){
+  let x='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><sheetViews><sheetView workbookViewId="0" showGridLines="0"/></sheetViews><sheetFormatPr defaultRowHeight="15"/>';
+  x+='<cols>'+sh.cols.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('')+'</cols><sheetData>';
+  for(const r of Object.keys(sh.rows).map(Number).sort((a,b)=>a-b)){
+    const row=sh.rows[r]; x+=`<row r="${r}">`;
+    for(const c of Object.keys(row).map(Number).sort((a,b)=>a-b)){
+      const {v,s}=row[c], ref=colL(c)+r, sa=s?` s="${s}"`:'';
+      if(v===null||v===undefined||v==='') x+=`<c r="${ref}"${sa}/>`;
+      else if(typeof v==='number') x+=`<c r="${ref}"${sa}><v>${Math.round(v*1e6)/1e6}</v></c>`;
+      else if(typeof v==='object') x+=`<c r="${ref}"${sa}><v>${serial(v.d)}</v></c>`;
+      else x+=`<c r="${ref}"${sa} t="inlineStr"><is><t xml:space="preserve">${xEsc(v)}</t></is></c>`;
+    }
+    x+='</row>';
+  }
+  x+='</sheetData>';
+  if(sh.merges.length) x+=`<mergeCells count="${sh.merges.length}">`+sh.merges.map(m=>`<mergeCell ref="${m}"/>`).join('')+'</mergeCells>';
+  return x+'<pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/><pageSetup paperSize="9" fitToWidth="1" fitToHeight="0" orientation="'+(sh.landscape?'landscape':'portrait')+'"/></worksheet>';
+}
+function xBlock(sh,r,c,arr){
+  for(const it of arr){
+    switch(it.t){
+      case 'sub': xm(sh,r,c,c+1,it.l,X.SUB); break;
+      case 'head': xs(sh,r,c,it.a||'Art',X.CH); xs(sh,r,c+1,'Betrag',X.CHR); break;
+      case 'grp': xs(sh,r,c,it.l,X.GRP); xs(sh,r,c+1,null,X.GRP); break;
+      case 'line': xs(sh,r,c,it.d?{d:it.d}:(it.l??null),it.d?X.DATE:X.TXT); xs(sh,r,c+1,it.v!=null?it.v/100:null,X.EUR); break;
+      case 'zs': xs(sh,r,c,it.l,X.ZT); xs(sh,r,c+1,it.v/100,X.ZE); break;
+      case 'sum': xs(sh,r,c,it.l,X.TT); xs(sh,r,c+1,it.v/100,X.TE); break;
+    }
+    r++;
+  }
+  return r;
+}
+function xMonth(ym,b){
+  const g=b.g, sh=xSheet(MONTHS[+ym.slice(5)-1],[2,30,14,3,32,14,3,32,15]);
+  xs(sh,2,2,'Haushaltsbuch · '+ymLabel(ym),X.T);
+  xs(sh,3,2,'Export aus der Haushaltsbuch-App am '+fmtDate(todayISO()),X.HINT);
+  xm(sh,5,2,3,'BARGELD',X.HG); xm(sh,5,5,6,'KONTO',X.HB); xm(sh,5,8,9,'MONATSABRECHNUNG',X.HS);
+  const lines=o=>Object.entries(o).sort((a,b)=>b[1]-a[1]).map(([l,v])=>({t:'line',l,v}));
+  const padTo=(a,n)=>{ while(a.length<n) a.splice(a.length-1,0,{t:'line'}); return a; };
+  let bi=[{t:'sub',l:'Einnahmen'},{t:'head'},...lines(g.inBar),{t:'sum',l:'Summe Einnahmen Bar',v:g.inB}];
+  let ki=[{t:'sub',l:'Einnahmen'},{t:'head'},{t:'grp',l:'Planbare Einnahmen'},...lines(g.inKPlan),{t:'zs',l:'Zwischensumme planbar',v:sumObj(g.inKPlan)},
+          {t:'grp',l:'Außerplanmäßige Einnahmen'},...lines(g.inKExtra),{t:'zs',l:'Zwischensumme außerplanmäßig',v:sumObj(g.inKExtra)},{t:'sum',l:'Summe Einnahmen Konto',v:g.inK}];
+  let n=Math.max(bi.length,ki.length,4); padTo(bi,n); padTo(ki,n);
+  let r=xBlock(sh,6,2,bi); xBlock(sh,6,5,ki); r++;
+  let bo=[{t:'sub',l:'Ausgaben'},{t:'head'},...lines(g.outBar),{t:'sum',l:'Summe Ausgaben Bar',v:g.outB}];
+  let ko=[{t:'sub',l:'Ausgaben'},{t:'head'},{t:'grp',l:'Fixe Kosten'},...lines(g.outKFix),{t:'zs',l:'Zwischensumme fixe Kosten',v:sumObj(g.outKFix)},
+          {t:'grp',l:'Variable Kosten'},...lines(g.outKVar),{t:'zs',l:'Zwischensumme variable Kosten',v:sumObj(g.outKVar)},{t:'sum',l:'Summe Ausgaben Konto',v:g.outK}];
+  n=Math.max(bo.length,ko.length); padTo(bo,n); padTo(ko,n);
+  r=xBlock(sh,r,2,bo); xBlock(sh,r-n,5,ko); r++;
+  xm(sh,r,2,6,'UMBUCHUNGEN ZWISCHEN KONTO UND BARGELD  (kein Gewinn/Verlust)',X.HS); r++;
+  const al=[{t:'sub',l:'Bargeldauszahlung  (Konto → Bar)'},{t:'head',a:'Datum'},...g.aus_l.slice().reverse().map(x=>({t:'line',d:x.date,v:x.amount})),{t:'sum',l:'Summe Auszahlungen',v:g.aus}];
+  const el=[{t:'sub',l:'Bareinzahlung  (Bar → Konto)'},{t:'head',a:'Datum'},...g.ein_l.slice().reverse().map(x=>({t:'line',d:x.date,v:x.amount})),{t:'sum',l:'Summe Einzahlungen',v:g.ein}];
+  n=Math.max(al.length,el.length,4); padTo(al,n); padTo(el,n);
+  xBlock(sh,r,2,al); xBlock(sh,r,5,el);
+  // Monatsabrechnung
+  const kv=[['Einnahmen gesamt (Bar + Konto)',g.inc],['Ausgaben gesamt (Bar + Konto)',g.exp],[g.res>=0?'Monatsgewinn':'Monatsverlust',g.res,1],['Sparquote (Ergebnis / Einnahmen)',g.inc?g.res/g.inc:null,0,1],null,
+    ['#KONTO',X.HB],['Anfangsbestand',b.ks],['+ Einnahmen Konto',g.inK],['− Ausgaben Konto',g.outK],['− Bargeldauszahlungen',g.aus],['+ Bareinzahlungen',g.ein],['Endbestand Konto',b.ke,1],null,
+    ['#BARGELD',X.HG],['Anfangsbestand',b.bs],['+ Einnahmen Bar',g.inB],['− Ausgaben Bar',g.outB],['+ Bargeldauszahlungen',g.aus],['− Bareinzahlungen',g.ein],['Endbestand Bargeld',b.be,1],null,
+    ['Gesamtbestand Monatsende',b.ke+b.be,1]];
+  let rr=6;
+  for(const k of kv){
+    if(k){
+      if(String(k[0]).startsWith('#')) xm(sh,rr,8,9,k[0].slice(1),k[1]);
+      else if(k[3]){ xs(sh,rr,8,k[0],X.TXT); xs(sh,rr,9,k[1],X.PCT); }
+      else { xs(sh,rr,8,k[0],k[2]?X.TT:X.TXT); xs(sh,rr,9,k[1]/100,k[2]?X.TE:X.EUR); }
+    }
+    rr++;
+  }
+  return sh;
+}
+function xYear(y,bt,act){
+  const sh=xSheet('Jahresübersicht',[2,28,...Array(15).fill(13)]); sh.landscape=true;
+  xs(sh,2,2,'Haushaltsbuch · Jahresübersicht '+y,X.T);
+  xs(sh,3,2,'Export aus der Haushaltsbuch-App am '+fmtDate(todayISO()),X.HINT);
+  const heads=['Monat','Einnahmen','Ausgaben','Ergebnis','Sparquote','Konto Monatsende','Bargeld Monatsende','Gesamt Monatsende'];
+  heads.forEach((h,i)=>xs(sh,5,2+i,h,X.HS));
+  let I=0,E=0; const byCat={};
+  for(let m=1;m<=12;m++){
+    const ym=y+'-'+pad(m), on=act.includes(ym), r=5+m;
+    xs(sh,r,2,MONTHS[m-1],X.BOLD);
+    if(on){ const b=bt[ym], g=b.g; I+=g.inc; E+=g.exp;
+      [g.inc,g.exp,g.res].forEach((v,i)=>xs(sh,r,3+i,v/100,X.EUR));
+      xs(sh,r,6,g.inc?g.res/g.inc:null,X.PCT); xs(sh,r,7,b.ke/100,X.EUR); xs(sh,r,8,b.be/100,X.EUR); xs(sh,r,9,(b.ke+b.be)/100,X.EUR);
+      for(const k in g.byCat) (byCat[k]=byCat[k]||Array(12).fill(0))[m-1]+=g.byCat[k];
+    } else for(let c=3;c<=9;c++) xs(sh,r,c,null,c===6?X.PCT:X.EUR);
+  }
+  const n=act.length;
+  xs(sh,18,2,'Summe Jahr',X.TT); xs(sh,18,3,I/100,X.TE); xs(sh,18,4,E/100,X.TE); xs(sh,18,5,(I-E)/100,X.TE); xs(sh,18,6,I?(I-E)/I:null,X.TP);
+  for(let c=7;c<=9;c++) xs(sh,18,c,null,X.TT);
+  xs(sh,19,2,'Ø je erfasstem Monat',X.TXT); [I,E,I-E].forEach((v,i)=>xs(sh,19,3+i,n?v/n/100:0,X.EUR));
+  ['Bestände','Anfang','Ende','Veränderung'].forEach((h,i)=>xs(sh,21,2+i,h,X.HS));
+  if(n){ const f=bt[act[0]], l=bt[act[n-1]];
+    [['Konto',f.ks,l.ke],['Bargeld',f.bs,l.be]].forEach(([lab,a,e],i)=>{ xs(sh,22+i,2,lab,X.BOLD); xs(sh,22+i,3,a/100,X.EUR); xs(sh,22+i,4,e/100,X.EUR); xs(sh,22+i,5,(e-a)/100,X.EUR); });
+    xs(sh,24,2,'Gesamtvermögen',X.TT); xs(sh,24,3,(f.ks+f.bs)/100,X.TE); xs(sh,24,4,(l.ke+l.be)/100,X.TE); xs(sh,24,5,(l.ke+l.be-f.ks-f.bs)/100,X.TE);
+  }
+  const R0=27; xm(sh,R0,2,16,'AUSGABEN NACH KATEGORIE  (Bar + Konto)',X.HS);
+  ['Kategorie',...MSHORT,'Summe','Ø / Monat'].forEach((h,i)=>xs(sh,R0+1,2+i,h,i?X.CHR:X.CH));
+  const tot={}; for(const k in byCat) tot[k]=byCat[k].reduce((a,b)=>a+b,0);
+  let r=R0+2;
+  for(const k of Object.keys(byCat).sort((a,b)=>tot[b]-tot[a])){
+    xs(sh,r,2,k,X.TXT); byCat[k].forEach((v,i)=>xs(sh,r,3+i,v/100,X.EUR)); xs(sh,r,15,tot[k]/100,X.ZE); xs(sh,r,16,n?tot[k]/n/100:0,X.EUR); r++;
+  }
+  xs(sh,r,2,'Summe Ausgaben',X.TT);
+  for(let m=1;m<=12;m++){ const ym=y+'-'+pad(m); xs(sh,r,2+m,act.includes(ym)?bt[ym].g.exp/100:0,X.TE); }
+  xs(sh,r,15,E/100,X.TE); xs(sh,r,16,n?E/n/100:0,X.TE);
+  return sh;
+}
+function xList(y){
+  const sh=xSheet('Buchungen',[2,12,16,14,28,30,14,12]);
+  xs(sh,2,2,'Alle Buchungen '+y,X.T);
+  ['Datum','Typ','Bar / Konto','Kategorie','Notiz','Betrag','Fix / Variabel'].forEach((h,i)=>xs(sh,4,2+i,h,X.HS));
+  const tl={einnahme:'Einnahme',ausgabe:'Ausgabe',auszahlung:'Bargeldauszahlung',einzahlung:'Bareinzahlung'};
+  let r=5;
+  for(const x of S.tx.filter(x=>x.date.slice(0,4)===String(y)&&x.date>=S.settings.start).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0)){
+    xs(sh,r,2,{d:x.date},X.DATE); xs(sh,r,3,tl[x.kind],X.TXT);
+    xs(sh,r,4,x.kind==='auszahlung'?'Konto → Bar':x.kind==='einzahlung'?'Bar → Konto':(x.acct==='bar'?'Bar':'Konto'),X.TXT);
+    xs(sh,r,5,x.cat||'',X.TXT); xs(sh,r,6,x.note||'',X.TXT); xs(sh,r,7,x.amount/100,X.EUR);
+    xs(sh,r,8,x.kind==='einnahme'?(x.fixed?'planbar':'außerplanmäßig'):x.kind==='ausgabe'?(x.fixed?'fix':'variabel'):'Umbuchung',X.TXT); r++;
+  }
+  return sh;
+}
+function buildXlsx(y){
+  const bt=balanceTable(), act=activeMonths(y);
+  const sheets=[xYear(y,bt,act), ...act.map(ym=>xMonth(ym,bt[ym])), xList(y)];
+  const files=[
+    {name:'[Content_Types].xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+sheets.map((s,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')+'</Types>'},
+    {name:'_rels/.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'},
+    {name:'xl/workbook.xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'+sheets.map((s,i)=>`<sheet name="${xEsc(s.name)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')+'</sheets></workbook>'},
+    {name:'xl/_rels/workbook.xml.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+sheets.map((s,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')+`<Relationship Id="rId${sheets.length+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`},
+    {name:'xl/styles.xml',data:XSTYLES},
+    ...sheets.map((s,i)=>({name:`xl/worksheets/sheet${i+1}.xml`,data:sheetXml(s)}))
+  ];
+  return zipBlob(files,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+}
+
+/* ---------- Render & Events ---------- */
+function render(){
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===UI.tab));
+  if(!S.setup){ $('#tabs').hidden=true; $('#title').textContent='Haushaltsbuch'; $('#view').innerHTML=viewSetup(); return; }
+  $('#tabs').hidden=false;
+  const v={eingabe:['Eingabe',viewInput],fix:['Fixposten',viewFix],analyse:['Analyse',viewAnalyse],settings:['Einstellungen',viewSettings]}[UI.tab];
+  $('#title').textContent=v[0]; $('#view').innerHTML=v[1]();
+}
+function setFormVal(obj,k,v){ obj[k]=v; }
+document.addEventListener('input',e=>{ const el=e.target; if(el.dataset.f) setFormVal(F,el.dataset.f,el.value); if(el.dataset.m&&M) setFormVal(M.s,el.dataset.m,el.value); });
+document.addEventListener('change',e=>{ const el=e.target; if(el.dataset.f) setFormVal(F,el.dataset.f,el.value); if(el.dataset.m&&M) setFormVal(M.s,el.dataset.m,el.value); });
+document.addEventListener('keydown',e=>{ if(e.key==='Enter' && e.target.dataset && e.target.dataset.f){ e.preventDefault(); e.target.blur(); book(); } });
+$('#filein').addEventListener('change',e=>{ const f=e.target.files[0]; if(f) doRestore(f); e.target.value=''; });
+
+document.addEventListener('click',async e=>{
+  const tab=e.target.closest('#tabs button');
+  if(tab){ UI.tab=tab.dataset.tab; if(UI.tab==='analyse'){ runRecurring(); } render(); window.scrollTo(0,0); return; }
+  const sb=e.target.closest('.seg button');
+  if(sb){
+    const sg=sb.parentElement, k=sg.dataset.k, v=sb.dataset.v, sc=sg.dataset.scope;
+    if(sc==='f'){ if(k==='kind'&&v!==F.kind){ F.cat=F.lastCat[v]||''; } F[k]=v; render(); }
+    else if(sc==='m'&&M){ if(k==='kind') M.s.keepCat=false; M.s[k]=v; renderSheet(); }
+    else if(sc==='a'){ UI[k]=v; render(); }
+    return;
+  }
+  const a=e.target.closest('[data-a]'); if(!a) return;
+  const act=a.dataset.a;
+  switch(act){
+    case 'close': closeSheet(); break;
+    case 'book': book(); break;
+    case 'edit-tx': editTx(a.dataset.id); break;
+    case 'save-tx': case 'save-rec': M&&M.save(); break;
+    case 'del-tx': case 'del-rec': M&&M.del(); break;
+    case 'new-rec': recFormNew(); break;
+    case 'edit-rec': recFormEdit(a.dataset.id); break;
+    case 'prev': case 'next': { const d=act==='prev'?-1:1; if(UI.amode==='monat') UI.ym=ymAdd(UI.ym,d); else UI.year+=d; render(); break; }
+    case 'goto-month': UI.ym=a.dataset.ym; UI.amode='monat'; render(); window.scrollTo(0,0); break;
+    case 'backup': doBackup(); break;
+    case 'restore': $('#filein').click(); break;
+    case 'export': {
+      const y=+$('#xyear').value; const blob=buildXlsx(y);
+      const ok=await deliver(blob,'Haushaltsbuch-'+y+'.xlsx'); if(ok) toast('Excel erstellt ✓'); break; }
+    case 'setup': case 'save-start': {
+      const st=$('#s-start').value, k=$('#s-k').value===''?0:parseAmt($('#s-k').value), b=$('#s-b').value===''?0:parseAmt($('#s-b').value);
+      if(!st) return toast('Bitte den Startmonat wählen');
+      if(isNaN(k)||isNaN(b)) return toast('Bitte gültige Beträge eingeben');
+      const newStart=st+'-01';
+      if(act==='save-start' && newStart>S.settings.start && S.tx.some(x=>x.date<newStart) && !confirm('Buchungen vor '+fmtDate(newStart)+' werden dann nicht mehr ausgewertet. Fortfahren?')) return;
+      S.settings.start=newStart; S.settings.kontoStart=k; S.settings.barStart=b;
+      if(act==='setup'){ S.setup=true; UI.tab='eingabe'; }
+      save(); runRecurring(); toast(act==='setup'?'Startwerte gespeichert – los geht’s!':'Gespeichert ✓'); render(); break; }
+    case 'cat-add': {
+      const kind=a.dataset.kind, inp=$('#nc-'+kind), v=inp.value.trim();
+      if(!v) return; if(S.cats[kind].includes(v)) return toast('Kategorie gibt es schon');
+      S.cats[kind].push(v); save(); render(); break; }
+    case 'cat-del': {
+      const kind=a.dataset.kind, i=+a.dataset.i, name=S.cats[kind][i];
+      if(S.cats[kind].length<=1) return toast('Mindestens eine Kategorie wird benötigt');
+      if(!confirm('Kategorie „'+name+'“ entfernen? Bisherige Buchungen behalten ihre Bezeichnung.')) return;
+      S.cats[kind].splice(i,1); save(); render(); break; }
+    case 'cat-ren': {
+      const kind=a.dataset.kind, i=+a.dataset.i, old=S.cats[kind][i];
+      const v=(prompt('Neuer Name für „'+old+'“:',old)||'').trim();
+      if(!v||v===old) return; if(S.cats[kind].includes(v)) return toast('Kategorie gibt es schon');
+      S.cats[kind][i]=v;
+      const kinds=kind==='ausgabe'?['ausgabe']:['einnahme'];
+      S.tx.forEach(x=>{ if(kinds.includes(x.kind)&&x.cat===old) x.cat=v; });
+      S.rec.forEach(r=>{ if(kinds.includes(r.kind)&&r.cat===old) r.cat=v; });
+      save(); render(); break; }
+    case 'cat-up': {
+      const kind=a.dataset.kind, i=+a.dataset.i; if(!i) return;
+      const c=S.cats[kind]; [c[i-1],c[i]]=[c[i],c[i-1]]; save(); render(); break; }
+    case 'wipe':
+      if(!confirm('Wirklich ALLE Daten auf diesem Gerät löschen?')) return;
+      if(!confirm('Letzte Sicherheitsabfrage: Ohne Backup sind die Daten unwiederbringlich weg.')) return;
+      localStorage.removeItem(KEY); S=fresh(); UI.tab='eingabe'; render(); break;
+  }
+});
+
+/* ---------- Start ---------- */
+(function init(){
+  const n=runRecurring();
+  render();
+  if(n) toast(n+' Fixposten automatisch gebucht');
+  if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
+  if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ const t=todayISO(); if(F._day!==t){ F._day=t; F.date=t; } const k=runRecurring(); if(k){ toast(k+' Fixposten automatisch gebucht'); render(); } } });
+  F._day=todayISO();
+})();
+</script>
+</body>
+</html>

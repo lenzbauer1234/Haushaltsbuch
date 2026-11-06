@@ -1,0 +1,16 @@
+{
+  "name": "Haushaltsbuch",
+  "short_name": "Haushalt",
+  "description": "Einnahmen und Ausgaben für Bar und Konto erfassen und auswerten",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f2f3f5",
+  "theme_color": "#f2f3f5",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
